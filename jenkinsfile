@@ -66,8 +66,8 @@ pipeline {
     stage('Update Deployment File') {
 		
 		 environment {
-            GIT_REPO_NAME = "mindcircuit13"
-            GIT_USER_NAME = "devopstraininghub"
+            GIT_REPO_NAME = "cicdpipeline"
+            GIT_USER_NAME = "sathish-katakam"
         }
 		
             steps {
@@ -75,8 +75,6 @@ pipeline {
 				withCredentials([string(credentialsId: 'githubtoken', variable: 'githubtoken')]) 
 				{
                   sh '''
-                    git config user.email "gorekarmadhu@gmail.com"
-                    git config user.name "Madhu"
                     BUILD_NUMBER=${BUILD_NUMBER}
                     sed -i "s/batch13:.*/batch13:${BUILD_NUMBER}/g" deploymentfiles/deployment.yml
                     git add .

@@ -1,26 +1,98 @@
 pipeline {
     agent any
 
-    stages {
-        stage('CLONE SCM') {
-            steps {
-                echo 'Cloning Mc-app project code'
-				git branch: 'main', url: 'https://github.com/devopstraininghub/mindcircuit13.git'
-            }
-        }
-		
-		stage('Build Artifact ') {
-            steps {
-                echo 'generating artifact with maven build tool'
-				sh 'mvn clean install'
-            }
-        }
-		
-		stage('Deploy to tomcat') {
-            steps {
-                echo 'Deploying artifact to tomcat webserver '
-				deploy adapters: [tomcat9(credentialsId: 'tomcat', path: '', url: 'http://52.201.234.58:8091/')], contextPath: 'facebook-app', war: '**/*.war'
-            }
-        }
+
+       tools {
+        maven 'maven3'
     }
+
+    stages {
+      stage('checkout') {
+            steps {
+                echo 'Cloning GIT HUB Repo '
+				git branch: 'main', url: 'https://github.com/sathish-katakam/cicdpipeline'
+            }  
+        }
+		
+		
+		
+	 stage('sonar') {
+            steps {
+                echo 'scanning project'
+                sh 'ls -ltr'
+                
+                sh ''' mvn sonar:sonar \\
+                      -Dsonar.host.url=http://localhost:9000 \\
+                      -Dsonar.login=squ_8c7c3b47b3c7595edeea3266b383baefdada2186'''
+            }
+    	}
+		
+		
+		
+        stage('Build Artifact') {
+            steps {
+                echo 'Build Artifact'
+				sh 'mvn clean package'
+            }
+        }
+		
+		
+		
+        stage('Docker Image') {
+            steps {
+                echo 'Docker Image building'
+				sh 'docker build -t sathishkatakam/devops:${BUILD_NUMBER} .'
+            }
+        }
+		
+		
+       stage('Push to Dockerhub') {
+            steps {
+			 script {
+			withCredentials([string(credentialsId: 'dockerhub', variable: 'dockerhub')]) 
+			{
+            sh 'docker login -u sathishkatakam -p ${dockerhub}'
+			
+			 }
+			   sh 'docker push sathishkatakam/devops:${BUILD_NUMBER}'
+			   
+           
+				}
+				
+            }
+        }
+		
+		
+    stage('Update Deployment File') {
+		
+		 environment {
+            GIT_REPO_NAME = "mindcircuit13"
+            GIT_USER_NAME = "devopstraininghub"
+        }
+		
+            steps {
+                echo 'Update Deployment File'
+				withCredentials([string(credentialsId: 'githubtoken', variable: 'githubtoken')]) 
+				{
+                  sh '''
+                    git config user.email "gorekarmadhu@gmail.com"
+                    git config user.name "Madhu"
+                    BUILD_NUMBER=${BUILD_NUMBER}
+                    sed -i "s/batch13:.*/batch13:${BUILD_NUMBER}/g" deploymentfiles/deployment.yml
+                    git add .
+                    
+                    git commit -m "Update deployment image to version ${BUILD_NUMBER}"
+
+                    git push https://${githubtoken}@github.com/${GIT_USER_NAME}/${GIT_REPO_NAME} HEAD:main
+                '''
+				  
+                 }
+				
+            }
+        }
+		
+		
+			
+    }
+
 }

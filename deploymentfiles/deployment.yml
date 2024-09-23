@@ -17,7 +17,7 @@ spec:
     spec:
       containers:
       - name: cicdintegration
-        image: sathishkatakam/devops:11
+        image: sathishkatakam/devops:12
         ports:
         - containerPort: 8080
 

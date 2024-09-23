@@ -1,7 +1,7 @@
 ##artifact build stage
 FROM maven AS buildstage
-RUN mkdir /opt/mindcircuit13
-WORKDIR /opt/mindcircuit13
+RUN mkdir /opt/sathishdevops
+WORKDIR /opt/sathishdevops
 COPY . .
 RUN mvn clean install    ## artifact -- .war
 

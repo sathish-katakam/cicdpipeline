@@ -17,7 +17,7 @@ spec:
     spec:
       containers:
       - name: mc-app
-        image: sathishkatakam/devops:6
+        image: sathishkatakam/devops:7
         ports:
         - containerPort: 8080
 

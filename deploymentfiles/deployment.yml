@@ -2,21 +2,21 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: mc-app
+  name: cicdintegration
   labels:
-    app: mc-app
+    app: cicdintegration
 spec:
   replicas: 4
   selector:
     matchLabels:
-      app: mc-app
+      app: cicdintegration
   template:
     metadata:
       labels:
-        app: mc-app
+        app: cicdintegration
     spec:
       containers:
-      - name: mc-app
+      - name: cicdintegration
         image: sathishkatakam/devops:7
         ports:
         - containerPort: 8080

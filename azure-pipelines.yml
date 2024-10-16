@@ -1,0 +1,47 @@
+# Maven
+# Build your Java project and run tests with Apache Maven.
+# Add steps that analyze code, save build artifacts, deploy, and more:
+# https://docs.microsoft.com/azure/devops/pipelines/languages/java
+
+parameters:
+  - name: ReplicaSet
+    displayName: 'ReplicaSet Count'
+    type: number
+    default: 4
+    values:
+      - 2
+      - 3
+      - 4
+      - 5
+      - 6
+      - 7
+      - 8
+      - 9
+      - 10
+
+trigger: none
+
+
+pool:
+    name: ubuntu
+
+steps:
+- task: Maven@3
+  displayName: maven
+  inputs:
+    mavenPomFile: 'pom.xml'
+    mavenOptions: '-Xmx3072m'
+    testResultsFiles: '**/surefire-reports/TEST-*.xml'
+    goals: 'package'
+- task: SonarQubePrepare@6
+  displayName: SonarPreparation
+  inputs:
+    SonarQube: 'sonarqube'
+    scannerMode: 'CLI'
+    configMode: 'manual'
+    cliProjectKey: 'azurecicd'
+    cliProjectName: 'azurecicdyml'
+    cliSources: '.'
+- task: SonarQubeAnalyze@6
+  inputs:
+    jdkversion: 'JAVA_HOME_17_X64'

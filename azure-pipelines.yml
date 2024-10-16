@@ -3,13 +3,13 @@
 # Add steps that analyze code, save build artifacts, deploy, and more:
 # https://docs.microsoft.com/azure/devops/pipelines/languages/java
 
+#parameter for user input
 parameters:
   - name: ReplicaSet
     displayName: 'ReplicaSet Count'
     type: number
     default: 4
     values:
-      - 2
       - 3
       - 4
       - 5
@@ -21,27 +21,74 @@ parameters:
 
 trigger: none
 
-
+#Agent Pool
 pool:
     name: ubuntu
 
 steps:
+
+#Maven Section
 - task: Maven@3
   displayName: maven
   inputs:
     mavenPomFile: 'pom.xml'
     mavenOptions: '-Xmx3072m'
-    testResultsFiles: '**/surefire-reports/TEST-*.xml'
     goals: 'package'
+
+    
+#SonarQube Preparation
 - task: SonarQubePrepare@6
-  displayName: SonarPreparation
+  displayName: Sonar Preparation
   inputs:
-    SonarQube: 'sonarqube'
+    SonarQube: 'Sonar'
     scannerMode: 'CLI'
     configMode: 'manual'
-    cliProjectKey: 'azurecicd'
-    cliProjectName: 'azurecicdyml'
+    cliProjectKey: 'githubcicd'
+    cliProjectName: 'githubcicd'
     cliSources: '.'
+
+#SonarQube Analyze
 - task: SonarQubeAnalyze@6
+  displayName: Sonar Analysis
   inputs:
     jdkversion: 'JAVA_HOME_17_X64'
+    
+#OWASP Dependency Check
+ #- task: dependency-check-build-task@6
+ # inputs:
+ #  projectName: 'githubcicd'
+ #  scanPath: '.'
+ #  format: 'HTML'
+ #   uploadReports: true
+
+#Docker Build & Push
+- task: Docker@2
+  displayName: Docker Build & Push
+  inputs:
+    containerRegistry: 'awsazuredocker'
+    repository: 'sathishkatakam/devops'
+    command: 'buildAndPush'
+    Dockerfile: '**/Dockerfile'
+    tags: '$(Build.BuildNumber)'
+
+
+#Updating Manifest files
+- task: Bash@3
+  displayName: Update Manisfest files
+  inputs:
+    targetType: 'inline'
+    script: |      
+            replica=${{ parameters.ReplicaSet }}
+            buildid=$(Build.BuildNumber)
+            sed -i "s/replicas:.*/replicas: ${replica}/g" deploymentfiles/deployment.yml
+            sed -i "s/devops:.*/devops:${buildid}/g" deploymentfiles/deployment.yml
+            git add .
+            git commit -m "Update deployment image to version ${build_number}"
+            git push https://$(AZURETOKEN)@dev.azure.com/sathishdevopsazure//GithubCICD/_git/GithubCICD HEAD:main
+
+#Opening ArgoCD 
+- task: Bash@3
+  displayName: Opening Argocd in Browser
+  inputs:
+    targetType: 'inline'
+    script: 'xdg-open https://192.168.49.2:30982/'
